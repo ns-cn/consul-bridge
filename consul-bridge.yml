@@ -1,0 +1,4 @@
+consulAddress: 127.0.0.1:8500
+agents:
+  - { name: "baidu", ip: "127.0.0.1", "port": 8080, to: "www.baidu.com"}
+  - { name: "qq", ip: "127.0.0.1", "port": 8081, to: "www.qq.com:8888" }

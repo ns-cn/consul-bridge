@@ -1,6 +1,0 @@
-consulAddress: 127.0.0.1:8500
-agents:
-  - {name: "authorize-server", ip: "127.0.0.1", "port": 60001, to: "172.30.2.153:60001"}
-  - {name: "jcloud4-data", ip: "127.0.0.1", "port": 2600, to: "172.30.2.154:2600"}
-  - {name: "jcloud4-base", ip: "127.0.0.1", "port": 60020, to: "172.30.2.153:60020"}
-  - {name: "jcloud4-statistics-analytics", ip: "127.0.0.1", "port": 4000, to: "172.30.2.154:4000"}
