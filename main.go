@@ -3,9 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/consul/api"
-	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
 	"log"
@@ -15,12 +12,16 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+
+	"github.com/hashicorp/consul/api"
+	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v2"
 )
 
 var targetSettingFile string
 
 func main() {
-	RootCmd.Flags().StringVarP(&targetSettingFile, "load", "l", "./consul_bridge.yml", "target setting file")
+	RootCmd.Flags().StringVarP(&targetSettingFile, "load", "l", "./consul-bridge.yml", "target setting file")
 	err := RootCmd.Execute()
 	if err != nil {
 		return
@@ -37,7 +38,7 @@ var RootCmd = &cobra.Command{
 		if err != nil {
 			fmt.Println(err.Error())
 			return
-		} // 将读取的yaml文件解析为响应的 struct
+		}
 		err = yaml.Unmarshal(yamlFile, &setting)
 		if err != nil {
 			fmt.Println(err.Error())
@@ -54,6 +55,7 @@ var RootCmd = &cobra.Command{
 	},
 }
 
+// 处理系统的推出信号, 注销consul中的服务
 func exitHandle(setting Setting, exitChan chan os.Signal) {
 	for {
 		select {
@@ -89,6 +91,7 @@ type ConsulAgent struct {
 	RedirectAddress string `yaml:"to"`
 }
 
+// 将配置中的服务注册到consul中并启动本地服务监听对应的请求
 func bridge(consulAddress string, agent ConsulAgent) {
 	if agent.ServiceIp == "" {
 		agent.ServiceIp = "127.0.0.1"
@@ -102,13 +105,13 @@ func bridge(consulAddress string, agent ConsulAgent) {
 	reg.Port = agent.ServicePort  //注册service的端口
 	reg.Tags = []string{"primary"}
 
-	check := api.AgentServiceCheck{} //创建consul的检查器
-	check.TTL = "5s"                 //设置consul心跳检查时间间隔
+	check := api.AgentServiceCheck{}
+	check.TTL = "5s"
 	check.TLSSkipVerify = true
 	//check.HTTP = fmt.Sprintf("http://%s:%d/actuator/health", agent.ServiceIp, agent.ServicePort) //设置检查使用的url
 	//reg.Check = &check
 
-	client, err := api.NewClient(config) //创建客户端
+	client, err := api.NewClient(config)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -131,7 +134,6 @@ func bridge(consulAddress string, agent ConsulAgent) {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			fmt.Print("io.ReadFull(r.Body, body) ", err.Error())
-			//return,没有数据也是可以的，不需要直接结束
 		}
 		url := &url.URL{Host: agent.RedirectAddress, Scheme: "http", Path: r.URL.Path}
 		reqUrl := url.String()
@@ -155,7 +157,6 @@ func bridge(consulAddress string, agent ConsulAgent) {
 		}
 		io.Copy(w, res.Body)
 	}
-
 	mux.HandleFunc("/", redirect)
 	server := &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", agent.ServiceIp, agent.ServicePort),
@@ -168,6 +169,7 @@ func bridge(consulAddress string, agent ConsulAgent) {
 	}
 }
 
+// consul健康状态检查, 以做不做服务检查
 func healthCheck(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("health check")
 	result := healthCheckResult{Status: "UP"}
