@@ -6,7 +6,7 @@ consul client's bridge between test and prod
 > 通过在本地consul注册对应环境的应用节点,监听目标端口并转发实际的请求实现本地环境接入测试环境
 
 ## 下载
-下载链接: [windows](./built/consul_bridge.exe)、[linux](./built/consul_bridge_linux)、[mac](./built/consul_bridge_darwin)
+下载链接: [windows](./built/consul_bridge_win.exe)、[linux](./built/consul_bridge_linux)、[mac](./built/consul_bridge_darwin)
 
 ## 使用
 
