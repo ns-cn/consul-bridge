@@ -20,7 +20,7 @@ import (
 var targetSettingFile string
 
 func main() {
-	RootCmd.Flags().StringVarP(&targetSettingFile, "load", "l", "./cgo.yml", "target setting file")
+	RootCmd.Flags().StringVarP(&targetSettingFile, "load", "l", "./consul_bridge.yml", "target setting file")
 	err := RootCmd.Execute()
 	if err != nil {
 		return
