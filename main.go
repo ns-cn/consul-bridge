@@ -135,7 +135,7 @@ func bridge(consulAddress string, agent ConsulAgent) {
 		if err != nil {
 			fmt.Print("io.ReadFull(r.Body, body) ", err.Error())
 		}
-		url := &url.URL{Host: agent.RedirectAddress, Scheme: "http", Path: r.URL.Path}
+		url := &url.URL{Host: agent.RedirectAddress, Scheme: "http", Path: r.URL.Path, RawQuery: r.URL.RawQuery}
 		reqUrl := url.String()
 		fmt.Println(url)
 		req, err := http.NewRequest(r.Method, reqUrl, strings.NewReader(string(body)))
