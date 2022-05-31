@@ -1,9 +1,16 @@
 # consul-bridge
-consul client's bridge between test and prod
+consul-bridge: 架设多个consul环境之间的桥梁
 
 ## 解决问题
-> 开发时本地consul和测试环境的consul注册信息不统一,导致本地和其他环境**没法联调**或需要**修改很多配置文件**才能联调<br/>
-> 通过在本地consul注册对应环境的应用节点,监听目标端口并转发实际的请求实现本地环境接入测试环境
+
+- [x] 开发时需要本地开发调试，但本地服务又存在服务依赖问题
+- [x] 本地配置不足以完整运行整套微服务
+- [x] 需要接入其他环境做测试、debug等
+- [x] 每次接入其他环境就需要更改大量的配置参数 
+
+## 实现方式
+- [x] consul-bridge根据配置文件注册多个微服务实例到指定的consul(或本机的consul)
+- [x] 通过本地监听端口实现对微服务请求做转发,接入其他测试环境
 
 ## 下载
 下载链接: [windows](./built/consul_bridge_win.exe)、[linux](./built/consul_bridge_linux)、[mac](./built/consul_bridge_darwin)
