@@ -51,7 +51,7 @@ var RootCmd = &cobra.Command{
 		signal.Notify(exitChan, os.Interrupt, os.Kill, syscall.SIGTERM)
 		go exitHandle(setting, exitChan)
 		for _, agent := range setting.Agents {
-			go bridgeWithTcp(setting.ConsulAddress, agent)
+			go bridge(setting.ConsulAddress, agent)
 		}
 		select {}
 	},
@@ -151,7 +151,11 @@ func bridge(consulAddress string, agent ConsulAgent) {
 			return
 		}
 		for k, v := range r.Header {
-			req.Header.Set(k, v[0])
+			if k == "Host"{
+				req.Header.Set("Host", agent.RedirectAddress)
+			}else{
+				req.Header.Set(k, v[0])
+			}
 		}
 		res, err := cli.Do(req)
 		if err != nil {
@@ -212,7 +216,12 @@ func bridgeWithTcp(consulAddress string, agent ConsulAgent) {
 		log.Fatal(err)
 		return
 	}
-	defer listener.Close()
+	defer func(listener net.Listener) {
+		err := listener.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}(listener)
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
@@ -230,19 +239,43 @@ func bridgeWithTcp(consulAddress string, agent ConsulAgent) {
 			}
 			ExitChan := make(chan bool, 2)
 			// 转发请求
+			reciveFrom := make([]byte,1000)
 			proxyTo := func(source net.Conn, dest net.Conn, Exit chan bool) {
-				_, err := io.Copy(dest, source)
-				if err != nil && err != io.EOF{
-					fmt.Printf("往%v发送数据失败:%v\n", agent.RedirectAddress, err)
+				_, err := source.Read(reciveFrom)
+				if err != nil {
+					fmt.Printf("从%v接收数据失败:%v\n", agent.RedirectAddress, err)
+					return
 				}
+				fmt.Println(string(reciveFrom))
+				_, err = dest.Write(reciveFrom)
+				if err != nil {
+					fmt.Printf("从%v接收数据回写失败:%v\n", agent.RedirectAddress, err)
+					return
+				}
+				//_, err := io.Copy(dest, source)
+				//if err != nil && err != io.EOF{
+				//	fmt.Printf("往%v发送数据失败:%v\n", agent.RedirectAddress, err)
+				//}
 				ExitChan <- true
 			}
 			// 回写数据
-			writeBack := func(writeBackConnection net.Conn, proxyConnection net.Conn, Exit chan bool) {
-				_, err := io.Copy(writeBackConnection, proxyConnection)
-				if err != nil && err != io.EOF{
+			sendTo := make([]byte,0)
+			writeBack := func(dest net.Conn, source net.Conn, Exit chan bool) {
+				_, err := source.Read(sendTo)
+				if err != nil {
 					fmt.Printf("从%v接收数据失败:%v\n", agent.RedirectAddress, err)
+					return
 				}
+				fmt.Println(string(sendTo))
+				_, err = dest.Write(sendTo)
+				if err != nil {
+					fmt.Printf("从%v接收数据回写失败:%v\n", agent.RedirectAddress, err)
+					return
+				}
+				//_, err = io.Copy(writeBackConnection, proxyConnection)
+				//if err != nil && err != io.EOF{
+				//	fmt.Printf("从%v接收数据失败:%v\n", agent.RedirectAddress, err)
+				//}
 				ExitChan <- true
 			}
 			go proxyTo(connection, proxyConnection, ExitChan)
