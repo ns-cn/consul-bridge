@@ -1,6 +1,7 @@
 consulAddress: 127.0.0.1:8500
 agents:
   - { name: "baidu", using: "http", "port": 8080, to: "www.baidu.com:80"}
+  - { name: "micro-service-1", using: "http", "port": 10010, to: "remote-micro-service-1:10010"}
   - { name: "mysql", using: "tcp", "port": 3306, to: "remote-server:3306"}
   - { name: "redis", using: "tcp", "port": 6379, to: "remote-server:6379"}
   - { name: "rabbitmq", using: "tcp", "port": 5672, to: "remote-server:5672"}
