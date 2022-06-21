@@ -22,9 +22,12 @@ consul-bridge: 架设多个consul环境之间的桥梁
 ```yaml
 consulAddress: 127.0.0.1:8500
 agents:
-  - { name: "baidu", using: "http", "port": 80, to: "www.baidu.com:80"}
-  - { name: "mysql", using: "tcp", "port": 3307, to: "127.0.0.1:3306"}
-  - { name: "redis", using: "tcp", "port": 6380, to: "127.0.0.1:6379"}
+  - { name: "baidu", using: "http", "port": 8080, to: "www.baidu.com:80"}
+  - { name: "micro-service-1", using: "http", "port": 10010, to: "remote-micro-service-1:10010"}
+  - { name: "mysql", using: "tcp", "port": 3306, to: "remote-server:3306"}
+  - { name: "redis", using: "tcp", "port": 6379, to: "remote-server:6379"}
+  - { name: "rabbitmq", using: "tcp", "port": 5672, to: "remote-server:5672"}
+  - { name: "rabbitmq-ui", using: "http", "port": 15672, to: "remote-server:15672"}
 ```
 其中
 
