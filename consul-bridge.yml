@@ -1,4 +1,5 @@
 consulAddress: 127.0.0.1:8500
 agents:
-  - { name: "baidu", ip: "127.0.0.1", "port": 8080, to: "www.baidu.com"}
-  - { name: "qq", ip: "127.0.0.1", "port": 8081, to: "www.qq.com:8888" }
+  - { name: "baidu", using: "http", "port": 80, to: "www.baidu.com:80"}
+  - { name: "mysql", using: "tcp", "port": 3307, to: "127.0.0.1:3306"}
+  - { name: "redis", using: "tcp", "port": 6380, to: "127.0.0.1:6379"}

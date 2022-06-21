@@ -22,8 +22,9 @@ consul-bridge: 架设多个consul环境之间的桥梁
 ```yaml
 consulAddress: 127.0.0.1:8500
 agents:
-  - { name: "baidu", "port": 8080, to: "www.baidu.com"}
-  - { name: "qq", ip: "127.0.0.1", "port": 8081, to: "www.qq.com:8888" }
+  - { name: "baidu", using: "http", "port": 80, to: "www.baidu.com:80"}
+  - { name: "mysql", using: "tcp", "port": 3307, to: "127.0.0.1:3306"}
+  - { name: "redis", using: "tcp", "port": 6380, to: "127.0.0.1:6379"}
 ```
 其中
 
@@ -32,6 +33,7 @@ agents:
 | **consulAddress** |              本地consul地址               |                 |
 | **agents** |           转发规则, 可根据实际情况配置多组           |                 |
 | **name** |             注册到consul的服务名             |                 |
+| **using** |   端口监听方式  |  当前支持:http/tcp          |
 | **ip**(可选) | 本地服务的Host,如需与局域网共同使用consul做服务联调,需修改该值 | 可选,默认为127.0.0.1 |
 | **port** |                服务监听端口                 |                 |
 | **to** |                目标转发地址                 |                 |

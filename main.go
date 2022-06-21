@@ -30,6 +30,7 @@ func main() {
 	}
 }
 
+// RootCmd 根命令
 var RootCmd = &cobra.Command{
 	Use:   "condge",
 	Short: "consul bridge between test and prod",
@@ -51,7 +52,19 @@ var RootCmd = &cobra.Command{
 		signal.Notify(exitChan, os.Interrupt, os.Kill, syscall.SIGTERM)
 		go exitHandle(setting, exitChan)
 		for _, agent := range setting.Agents {
-			go bridge(setting.ConsulAddress, agent)
+			if agent.ServiceIP == "" {
+				agent.ServiceIP = "127.0.0.1"
+			}
+			if agent.Using == "" {
+				agent.Using = "http"
+			}
+			if agent.Using == "http" {
+				go bridge(setting.ConsulAddress, agent)
+			} else if agent.Using == "tcp" {
+				go bridgeWithTCP(setting.ConsulAddress, agent)
+			} else {
+				panic("using must be http or tcp")
+			}
 		}
 		select {}
 	},
@@ -81,37 +94,37 @@ func exitHandle(setting Setting, exitChan chan os.Signal) {
 
 }
 
+// Setting 设置模型
 type Setting struct {
 	ConsulAddress string        `yaml:"consulAddress"`
 	Agents        []ConsulAgent `yaml:"agents"`
 }
 
+// ConsulAgent consul代理信息
 type ConsulAgent struct {
-	ServiceName     string `yaml:"name"`
-	ServiceIp       string `yaml:"ip"`
-	ServicePort     int    `yaml:"port"`
-	RedirectAddress string `yaml:"to"`
+	ServiceName     string `yaml:"name"`  // 服务名称
+	Using           string `yaml:"using"` //	使用的协议
+	ServiceIP       string `yaml:"ip"`    //	服务ip
+	ServicePort     int    `yaml:"port"`  //	服务端口
+	RedirectAddress string `yaml:"to"`    //	重定向地址
 }
 
 // 将配置中的服务注册到consul中并启动本地服务监听对应的请求
 // 由于存在http和https问题,改为使用tcp进行转发
 func bridge(consulAddress string, agent ConsulAgent) {
-	if agent.ServiceIp == "" {
-		agent.ServiceIp = "127.0.0.1"
-	}
 	config := api.DefaultConfig()
 	config.Address = consulAddress //consul地址
 	reg := api.AgentServiceRegistration{}
 	reg.ID = agent.ServiceName
 	reg.Name = agent.ServiceName  //注册service的名字
-	reg.Address = agent.ServiceIp //注册service的ip
+	reg.Address = agent.ServiceIP //注册service的ip
 	reg.Port = agent.ServicePort  //注册service的端口
 	reg.Tags = []string{"primary"}
 
 	check := api.AgentServiceCheck{}
 	check.TTL = "5s"
 	check.TLSSkipVerify = true
-	//check.HTTP = fmt.Sprintf("http://%s:%d/actuator/health", agent.ServiceIp, agent.ServicePort) //设置检查使用的url
+	//check.HTTP = fmt.Sprintf("http://%s:%d/actuator/health", agent.ServiceIP, agent.ServicePort) //设置检查使用的url
 	//reg.Check = &check
 
 	client, err := api.NewClient(config)
@@ -143,17 +156,17 @@ func bridge(consulAddress string, agent ConsulAgent) {
 			schema = r.URL.Scheme
 		}
 		url := &url.URL{Host: agent.RedirectAddress, Scheme: schema, Path: r.URL.Path, RawQuery: r.URL.RawQuery}
-		reqUrl := url.String()
+		reqURL := url.String()
 		fmt.Println(url)
-		req, err := http.NewRequest(r.Method, reqUrl, strings.NewReader(string(body)))
+		req, err := http.NewRequest(r.Method, reqURL, strings.NewReader(string(body)))
 		if err != nil {
 			fmt.Print("http.NewRequest ", err.Error())
 			return
 		}
 		for k, v := range r.Header {
-			if k == "Host"{
+			if k == "Host" {
 				req.Header.Set("Host", agent.RedirectAddress)
-			}else{
+			} else {
 				req.Header.Set(k, v[0])
 			}
 		}
@@ -170,7 +183,7 @@ func bridge(consulAddress string, agent ConsulAgent) {
 	}
 	mux.HandleFunc("/", redirect)
 	server := &http.Server{
-		Addr:    fmt.Sprintf("%s:%d", agent.ServiceIp, agent.ServicePort),
+		Addr:    fmt.Sprintf("%s:%d", agent.ServiceIP, agent.ServicePort),
 		Handler: mux,
 	}
 	err = server.ListenAndServe()
@@ -181,16 +194,13 @@ func bridge(consulAddress string, agent ConsulAgent) {
 }
 
 // 将配置中的服务注册到consul中并启动本地服务监听对应的请求
-func bridgeWithTcp(consulAddress string, agent ConsulAgent) {
-	if agent.ServiceIp == "" {
-		agent.ServiceIp = "127.0.0.1"
-	}
+func bridgeWithTCP(consulAddress string, agent ConsulAgent) {
 	config := api.DefaultConfig()
 	config.Address = consulAddress //consul地址
 	reg := api.AgentServiceRegistration{}
 	reg.ID = agent.ServiceName
 	reg.Name = agent.ServiceName  //注册service的名字
-	reg.Address = agent.ServiceIp //注册service的ip
+	reg.Address = agent.ServiceIP //注册service的ip
 	reg.Port = agent.ServicePort  //注册service的端口
 	reg.Tags = []string{"primary"}
 
@@ -211,7 +221,7 @@ func bridgeWithTcp(consulAddress string, agent ConsulAgent) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", agent.ServiceIp, agent.ServicePort))
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", agent.ServiceIP, agent.ServicePort))
 	if err != nil {
 		log.Fatal(err)
 		return
@@ -225,7 +235,7 @@ func bridgeWithTcp(consulAddress string, agent ConsulAgent) {
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			fmt.Println("建立连接错误:%v\n", err)
+			fmt.Printf("建立连接错误:%v\n", err)
 			continue
 		}
 		go func(connection net.Conn) {
@@ -239,43 +249,43 @@ func bridgeWithTcp(consulAddress string, agent ConsulAgent) {
 			}
 			ExitChan := make(chan bool, 2)
 			// 转发请求
-			reciveFrom := make([]byte,1000)
+			// reciveFrom := make([]byte, 1000)
 			proxyTo := func(source net.Conn, dest net.Conn, Exit chan bool) {
-				_, err := source.Read(reciveFrom)
-				if err != nil {
-					fmt.Printf("从%v接收数据失败:%v\n", agent.RedirectAddress, err)
-					return
+				// _, err := source.Read(reciveFrom)
+				// if err != nil {
+				// 	fmt.Printf("从%v接收数据失败:%v\n", agent.RedirectAddress, err)
+				// 	return
+				// }
+				// fmt.Println(string(reciveFrom))
+				// _, err = dest.Write(reciveFrom)
+				// if err != nil {
+				// 	fmt.Printf("从%v接收数据回写失败:%v\n", agent.RedirectAddress, err)
+				// 	return
+				// }
+				_, err := io.Copy(dest, source)
+				if err != nil && err != io.EOF {
+					fmt.Printf("往%v发送数据失败:%v\n", agent.RedirectAddress, err)
 				}
-				fmt.Println(string(reciveFrom))
-				_, err = dest.Write(reciveFrom)
-				if err != nil {
-					fmt.Printf("从%v接收数据回写失败:%v\n", agent.RedirectAddress, err)
-					return
-				}
-				//_, err := io.Copy(dest, source)
-				//if err != nil && err != io.EOF{
-				//	fmt.Printf("往%v发送数据失败:%v\n", agent.RedirectAddress, err)
-				//}
 				ExitChan <- true
 			}
 			// 回写数据
-			sendTo := make([]byte,0)
+			// sendTo := make([]byte, 0)
 			writeBack := func(dest net.Conn, source net.Conn, Exit chan bool) {
-				_, err := source.Read(sendTo)
-				if err != nil {
+				// _, err := source.Read(sendTo)
+				// if err != nil {
+				// 	fmt.Printf("从%v接收数据失败:%v\n", agent.RedirectAddress, err)
+				// 	return
+				// }
+				// fmt.Println(string(sendTo))
+				// _, err = dest.Write(sendTo)
+				// if err != nil {
+				// 	fmt.Printf("从%v接收数据回写失败:%v\n", agent.RedirectAddress, err)
+				// 	return
+				// }
+				_, err = io.Copy(dest, source)
+				if err != nil && err != io.EOF {
 					fmt.Printf("从%v接收数据失败:%v\n", agent.RedirectAddress, err)
-					return
 				}
-				fmt.Println(string(sendTo))
-				_, err = dest.Write(sendTo)
-				if err != nil {
-					fmt.Printf("从%v接收数据回写失败:%v\n", agent.RedirectAddress, err)
-					return
-				}
-				//_, err = io.Copy(writeBackConnection, proxyConnection)
-				//if err != nil && err != io.EOF{
-				//	fmt.Printf("从%v接收数据失败:%v\n", agent.RedirectAddress, err)
-				//}
 				ExitChan <- true
 			}
 			go proxyTo(connection, proxyConnection, ExitChan)
