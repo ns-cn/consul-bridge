@@ -14,6 +14,10 @@ consul-bridge: 架设多个consul环境之间的桥梁
 
 ## 下载
 下载链接: [windows](./built/consul_bridge_win.exe)、[linux](./built/consul_bridge_linux)、[mac](./built/consul_bridge_darwin)
+或使用brew方式安装
+```
+brew tap ns-cn/ttools && brew install consul-bridge
+```
 
 ## 使用
 
