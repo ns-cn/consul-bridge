@@ -32,7 +32,7 @@ func main() {
 
 // RootCmd 根命令
 var RootCmd = &cobra.Command{
-	Use:   "condge",
+	Use:   "consul-bridge",
 	Short: "consul bridge between test and prod",
 	Long:  `consul bridge between test and prod`,
 	Run: func(cmd *cobra.Command, args []string) {
