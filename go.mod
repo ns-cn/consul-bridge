@@ -1,4 +1,4 @@
-module consul-bridge
+module github.com/ns-cn/consul-bridge
 
 go 1.18
 
