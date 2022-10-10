@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
 	"log"
@@ -18,10 +19,9 @@ import (
 
 	"github.com/hashicorp/consul/api"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v2"
 )
 
-const VERSION = "1.0"
+const VERSION = "1.05"
 
 var targetSettingFile string
 
