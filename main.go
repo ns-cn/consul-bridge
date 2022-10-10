@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"runtime"
 	"syscall"
 
 	"net/url"
@@ -20,14 +21,26 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+const VERSION = "1.0"
+
 var targetSettingFile string
 
 func main() {
 	RootCmd.Flags().StringVarP(&targetSettingFile, "load", "l", "./consul-bridge.yml", "target setting file")
+	RootCmd.AddCommand(VersionCmd)
 	err := RootCmd.Execute()
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+var VersionCmd = &cobra.Command{
+	Use:     "version",
+	Aliases: []string{"v"},
+	Short:   "打印当前版本号",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println(fmt.Sprintf("consul-bridge version: v%s(%s/%s)", VERSION, runtime.GOOS, runtime.GOARCH))
+	},
 }
 
 // RootCmd 根命令
