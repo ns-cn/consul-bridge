@@ -104,7 +104,7 @@ func exitHandle(setting Setting, exitChan chan os.Signal) {
 					fmt.Println("deregister service:", agent.ServiceName)
 					err := client.Agent().ServiceDeregister(agent.ServiceName)
 					if err != nil {
-						log.Fatal(err)
+						log.Println(err)
 					}
 				}
 			}
@@ -120,7 +120,7 @@ func exitHandle(setting Setting, exitChan chan os.Signal) {
 // bridgeWithHttp 以http方式进行代理
 func bridgeWithHttp(client *api.Client, agent ConsulAgent) {
 	mux := http.NewServeMux()
-	if agent.Ignore {
+	if !agent.Ignore {
 		err := RegistToConsul(client, agent)
 		defer func(agent *api.Agent, serviceID string) {
 			_ = agent.ServiceDeregister(serviceID)
@@ -185,7 +185,7 @@ func bridgeWithHttp(client *api.Client, agent ConsulAgent) {
 
 // 将配置中的服务注册到consul中并启动本地服务监听对应的请求
 func bridgeWithTCP(client *api.Client, agent ConsulAgent) {
-	if agent.Ignore {
+	if !agent.Ignore {
 		err := RegistToConsul(client, agent)
 		defer func(agent *api.Agent, serviceID string) {
 			_ = agent.ServiceDeregister(serviceID)
