@@ -27,7 +27,7 @@ brew tap ns-cn/ttools && brew install consul-bridge
 consulAddress: 127.0.0.1:8500
 agents:
   - { name: "baidu", using: "http", "port": 8080, to: "www.baidu.com:80"}
-  - { name: "micro-service-1", using: "http", "port": 10010, to: "remote-micro-service-1:10010"}
+  - { name: "micro-service-1", using: "http", "port": 10010, to: "remote-micro-service-1:10010", toConsul: false}
   - { name: "mysql", using: "tcp", "port": 3306, to: "remote-server:3306"}
   - { name: "redis", using: "tcp", "port": 6379, to: "remote-server:6379"}
   - { name: "rabbitmq", using: "tcp", "port": 5672, to: "remote-server:5672"}
@@ -35,15 +35,16 @@ agents:
 ```
 其中
 
-| 配置名 |                  含义                   |       值说明       |
-|:----|:-------------------------------------:|:---------------:|
-| **consulAddress** |              本地consul地址               |                 |
-| **agents** |           转发规则, 可根据实际情况配置多组           |                 |
-| **name** |             注册到consul的服务名             |                 |
-| **using**(可选) |   端口监听方式  |  当前支持:http/tcp,默认http          |
-| **ip**(可选) | 本地服务的Host,如需与局域网共同使用consul做服务联调,需修改该值 | 可选,默认为127.0.0.1 |
-| **port** |                服务监听端口                 |                 |
-| **to** |                目标转发地址                 |                 |
+| 配置名               |                  含义                   |         值说明          |
+|:------------------|:-------------------------------------:|:--------------------:|
+| **consulAddress** |              本地consul地址               |                      |
+| **agents**        |           转发规则, 可根据实际情况配置多组           |                      |
+| **name**          |             注册到consul的服务名             |                      |
+| **using**(可选)     |                端口监听方式                 | 当前支持:http/tcp,默认http |
+| **ip**(可选)        | 本地服务的Host,如需与局域网共同使用consul做服务联调,需修改该值 |   可选,默认为127.0.0.1    |
+| **port**          |                服务监听端口                 |                      |
+| **to**            |                目标转发地址                 |                      |
+| **ignore**        |       是否忽略(不注册到consul,默认false)        |     可选,默认值为false     |
 #### 启动
 > 注: 可使用参数```--load```或```-l```指定配置文件
 ```shell

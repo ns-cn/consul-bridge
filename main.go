@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/liushuochen/gotable"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 	"io"
@@ -12,7 +11,6 @@ import (
 	"net"
 	"net/http"
 	"runtime"
-	"strconv"
 	"syscall"
 
 	"net/url"
@@ -23,7 +21,7 @@ import (
 	"github.com/hashicorp/consul/api"
 )
 
-const VERSION = "1.0.6"
+const VERSION = "1.0.7"
 
 var targetSettingFile string
 
@@ -62,7 +60,8 @@ var RootCmd = &cobra.Command{
 			fmt.Println(err.Error())
 			return
 		}
-		printSettings(&setting)
+		setting.InitDefaults()
+		setting.PrettyPrint()
 		exitChan := make(chan os.Signal)
 		signal.Notify(exitChan, os.Interrupt, os.Kill, syscall.SIGTERM)
 		go exitHandle(setting, exitChan)
@@ -78,34 +77,15 @@ var RootCmd = &cobra.Command{
 				agent.Using = "http"
 			}
 			if agent.Using == "http" {
-				go bridgeWithHttp(client, agent)
+				go bridgeWithHttp(client, *agent)
 			} else if agent.Using == "tcp" {
-				go bridgeWithTCP(client, agent)
+				go bridgeWithTCP(client, *agent)
 			} else {
 				panic("using must be one of [http, tcp]")
 			}
 		}
 		select {}
 	},
-}
-
-func printSettings(setting *Setting) {
-	fmt.Printf("consul: %s\n", setting.ConsulAddress)
-	table, err := gotable.Create("服务名称", "代理方式", "本地端口", "目标地址")
-	if err != nil {
-		fmt.Println("Create table failed: ", err.Error())
-		return
-	}
-	for _, agent := range setting.Agents {
-		if agent.ServiceIP == "" {
-			agent.ServiceIP = "127.0.0.1"
-		}
-		if agent.Using == "" {
-			agent.Using = "http"
-		}
-		_ = table.AddRow([]string{agent.ServiceName, agent.Using, strconv.Itoa(agent.ServicePort), agent.RedirectAddress})
-	}
-	fmt.Println(table)
 }
 
 // 处理系统的推出信号, 注销consul中的服务
@@ -129,22 +109,6 @@ func exitHandle(setting Setting, exitChan chan os.Signal) {
 			os.Exit(0)
 		}
 	}
-
-}
-
-// Setting 设置模型
-type Setting struct {
-	ConsulAddress string        `yaml:"consulAddress"`
-	Agents        []ConsulAgent `yaml:"agents"`
-}
-
-// ConsulAgent consul代理信息
-type ConsulAgent struct {
-	ServiceName     string `yaml:"name"`  // 服务名称
-	Using           string `yaml:"using"` //	使用的协议
-	ServiceIP       string `yaml:"ip"`    //	服务ip
-	ServicePort     int    `yaml:"port"`  //	服务端口
-	RedirectAddress string `yaml:"to"`    //	重定向地址
 }
 
 // 代理udp请求
@@ -153,15 +117,17 @@ type ConsulAgent struct {
 // 由于存在http和https问题,改为使用tcp进行转发
 // bridgeWithHttp 以http方式进行代理
 func bridgeWithHttp(client *api.Client, agent ConsulAgent) {
-	err := RegistToConsul(client, agent)
-	defer func(agent *api.Agent, serviceID string) {
-		_ = agent.ServiceDeregister(serviceID)
-	}(client.Agent(), agent.ServiceName)
-	if err != nil {
-		log.Fatal(err)
-	}
 	mux := http.NewServeMux()
-	mux.HandleFunc("/actuator/health", healthCheck)
+	if agent.Ignore {
+		err := RegistToConsul(client, agent)
+		defer func(agent *api.Agent, serviceID string) {
+			_ = agent.ServiceDeregister(serviceID)
+		}(client.Agent(), agent.ServiceName)
+		if err != nil {
+			log.Fatal(err)
+		}
+		mux.HandleFunc("/actuator/health", healthCheck)
+	}
 	redirect := func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/actuator/health" {
 			healthCheck(w, r)
@@ -208,7 +174,7 @@ func bridgeWithHttp(client *api.Client, agent ConsulAgent) {
 		Addr:    fmt.Sprintf("%s:%d", agent.ServiceIP, agent.ServicePort),
 		Handler: mux,
 	}
-	err = server.ListenAndServe()
+	err := server.ListenAndServe()
 	if err != nil {
 		log.Fatal(err)
 		return
@@ -217,10 +183,16 @@ func bridgeWithHttp(client *api.Client, agent ConsulAgent) {
 
 // 将配置中的服务注册到consul中并启动本地服务监听对应的请求
 func bridgeWithTCP(client *api.Client, agent ConsulAgent) {
-	err := RegistToConsul(client, agent)
-	defer func(agent *api.Agent, serviceID string) {
-		_ = agent.ServiceDeregister(serviceID)
-	}(client.Agent(), agent.ServiceName)
+	if agent.Ignore {
+		err := RegistToConsul(client, agent)
+		defer func(agent *api.Agent, serviceID string) {
+			_ = agent.ServiceDeregister(serviceID)
+		}(client.Agent(), agent.ServiceName)
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+	}
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", agent.ServiceIP, agent.ServicePort))
 	if err != nil {
 		log.Fatal(err)
