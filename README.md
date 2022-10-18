@@ -68,3 +68,5 @@ agents:
 ./onsul_bridge_darwin -l ./other_setting.yml
 ./onsul_bridge_darwin --load ./other_setting.yml
 ```
+
+![运行实例](./examples/demo.png)
