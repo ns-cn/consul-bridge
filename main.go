@@ -23,7 +23,7 @@ import (
 	"github.com/hashicorp/consul/api"
 )
 
-const VERSION = "1.05"
+const VERSION = "1.06"
 
 var targetSettingFile string
 
