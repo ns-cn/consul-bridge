@@ -18,6 +18,7 @@ require (
 	github.com/hashicorp/golang-lru v0.5.0 // indirect
 	github.com/hashicorp/serf v0.9.6 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/liushuochen/gotable v0.0.0-20220831134725-cbcd6bb0a5f9 // indirect
 	github.com/mattn/go-colorable v0.1.6 // indirect
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect

@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/liushuochen/gotable"
+	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
@@ -10,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"runtime"
+	"strconv"
 	"syscall"
 
 	"net/url"
@@ -18,7 +21,6 @@ import (
 	"strings"
 
 	"github.com/hashicorp/consul/api"
-	"github.com/spf13/cobra"
 )
 
 const VERSION = "1.05"
@@ -60,7 +62,7 @@ var RootCmd = &cobra.Command{
 			fmt.Println(err.Error())
 			return
 		}
-		fmt.Println(setting)
+		printSettings(&setting)
 		exitChan := make(chan os.Signal)
 		signal.Notify(exitChan, os.Interrupt, os.Kill, syscall.SIGTERM)
 		go exitHandle(setting, exitChan)
@@ -72,9 +74,6 @@ var RootCmd = &cobra.Command{
 			panic(err)
 		}
 		for _, agent := range setting.Agents {
-			if agent.ServiceIP == "" {
-				agent.ServiceIP = "127.0.0.1"
-			}
 			if agent.Using == "" {
 				agent.Using = "http"
 			}
@@ -88,6 +87,25 @@ var RootCmd = &cobra.Command{
 		}
 		select {}
 	},
+}
+
+func printSettings(setting *Setting) {
+	fmt.Printf("consul: %s\n", setting.ConsulAddress)
+	table, err := gotable.Create("服务名称", "代理方式", "本地端口", "目标地址")
+	if err != nil {
+		fmt.Println("Create table failed: ", err.Error())
+		return
+	}
+	for _, agent := range setting.Agents {
+		if agent.ServiceIP == "" {
+			agent.ServiceIP = "127.0.0.1"
+		}
+		if agent.Using == "" {
+			agent.Using = "http"
+		}
+		_ = table.AddRow([]string{agent.ServiceName, agent.Using, strconv.Itoa(agent.ServicePort), agent.RedirectAddress})
+	}
+	fmt.Println(table)
 }
 
 // 处理系统的推出信号, 注销consul中的服务
