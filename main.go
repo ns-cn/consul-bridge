@@ -100,10 +100,12 @@ func exitHandle(setting Setting, exitChan chan os.Signal) {
 				log.Fatal(err)
 			}
 			for _, agent := range setting.Agents {
-				fmt.Println("deregister service:", agent.ServiceName)
-				err := client.Agent().ServiceDeregister(agent.ServiceName)
-				if err != nil {
-					log.Fatal(err)
+				if !agent.Ignore {
+					fmt.Println("deregister service:", agent.ServiceName)
+					err := client.Agent().ServiceDeregister(agent.ServiceName)
+					if err != nil {
+						log.Fatal(err)
+					}
 				}
 			}
 			os.Exit(0)
