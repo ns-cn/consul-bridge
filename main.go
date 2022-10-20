@@ -73,9 +73,6 @@ var RootCmd = &cobra.Command{
 			panic(err)
 		}
 		for _, agent := range setting.Agents {
-			if agent.Using == "" {
-				agent.Using = "http"
-			}
 			if agent.Using == "http" {
 				go bridgeWithHttp(client, *agent)
 			} else if agent.Using == "tcp" {
