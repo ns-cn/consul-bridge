@@ -13,10 +13,17 @@ consul-bridge: 架设多个consul环境之间的桥梁
 - [x] 通过本地监听端口实现对微服务请求做转发,接入其他测试环境
 
 ## 下载
+#### 手动安装
 下载链接: [windows](./built/consul_bridge_win.exe)、[linux](./built/consul_bridge_linux)、[mac](./built/consul_bridge_darwin)
-或使用brew方式安装
+
+#### brew方式安装
 ```
 brew tap ns-cn/ttools && brew install consul-bridge
+```
+
+#### go方式安装
+```shell
+go install https://github.com/ns-cn/consul-bridge
 ```
 
 ## 使用
