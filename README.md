@@ -23,7 +23,7 @@ brew tap ns-cn/ttools && brew install consul-bridge
 
 #### go方式安装
 ```shell
-go install https://github.com/ns-cn/consul-bridge
+go install github.com/ns-cn/consul-bridge
 ```
 
 ## 使用
