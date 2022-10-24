@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/liushuochen/gotable"
 	"strconv"
+	"strings"
 )
 
 // Setting 设置模型
@@ -12,7 +13,7 @@ type Setting struct {
 	Agents        []*ConsulAgent `yaml:"agents"`
 }
 
-func (setting Setting) InitDefaults() {
+func (setting *Setting) InitDefaults() {
 	for _, agent := range setting.Agents {
 		if agent.ServiceIP == "" {
 			agent.ServiceIP = "127.0.0.1"
@@ -20,6 +21,7 @@ func (setting Setting) InitDefaults() {
 		if agent.Using == "" {
 			agent.Using = "http"
 		}
+		agent.Using = strings.ToLower(agent.Using)
 	}
 }
 
