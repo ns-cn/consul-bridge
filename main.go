@@ -50,9 +50,9 @@ var RootCmd = &cobra.Command{
 	Long:  `consul bridge between test and prod`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var setting Setting
-		yamlFile, err := ioutil.ReadFile(targetSettingFile)
+		yamlFile, err := os.ReadFile(targetSettingFile)
 		if err != nil {
-			fmt.Println(err.Error())
+			fmt.Printf("ERROR: %s\n", err.Error())
 			return
 		}
 		err = yaml.Unmarshal(yamlFile, &setting)
@@ -70,7 +70,8 @@ var RootCmd = &cobra.Command{
 		config.Address = setting.ConsulAddress //consul地址
 		client, err := api.NewClient(config)
 		if err != nil {
-			panic(err)
+			fmt.Printf("ERROR: %s\n", err.Error())
+			return
 		}
 		for _, agent := range setting.Agents {
 			if strings.ToLower(agent.Using) == "http" {
@@ -78,7 +79,8 @@ var RootCmd = &cobra.Command{
 			} else if strings.ToLower(agent.Using) == "tcp" {
 				go bridgeWithTCP(client, *agent)
 			} else {
-				panic("using must be one of [http, tcp]")
+				fmt.Println("ERROR: \"using must be one of [http, tcp]\"")
+				return
 			}
 		}
 		select {}
