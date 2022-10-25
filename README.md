@@ -23,11 +23,9 @@ brew tap ns-cn/ttools && brew install consul-bridge
 
 #### go方式安装
 ```shell
-go install github.com/ns-cn/consul-bridge@{版本号}
-## 例如
-go install github.com/ns-cn/consul-bridge@1.0.8
+# 安装最新版
+go install github.com/ns-cn/consul-bridge@latest
 ```
-> 由于使用```go install github.com/ns-cn/consul-bridge@latest```会安装并非最新版本，推荐指定版本下载
 
 ## 使用
 
