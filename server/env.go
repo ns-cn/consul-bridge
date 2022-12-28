@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+var targetSettingFile string
+
 // Setting 设置模型
 type Setting struct {
 	ConsulAddress string         `yaml:"consulAddress"`

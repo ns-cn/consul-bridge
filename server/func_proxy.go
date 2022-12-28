@@ -3,114 +3,15 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v2"
+	"github.com/hashicorp/consul/api"
 	"io"
 	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
-	"runtime"
-	"syscall"
-
 	"net/url"
-	"os"
-	"os/signal"
 	"strings"
-
-	"github.com/hashicorp/consul/api"
 )
-
-const VERSION = "1.0.9"
-
-var targetSettingFile string
-
-func main() {
-	RootCmd.Flags().StringVarP(&targetSettingFile, "load", "l", "./consul-bridge.yml", "target setting file")
-	RootCmd.AddCommand(VersionCmd)
-	err := RootCmd.Execute()
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-var VersionCmd = &cobra.Command{
-	Use:     "version",
-	Aliases: []string{"v"},
-	Short:   "打印当前版本号",
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println(fmt.Sprintf("consul-bridge version: v%s(%s/%s)", VERSION, runtime.GOOS, runtime.GOARCH))
-	},
-}
-
-// RootCmd 根命令
-var RootCmd = &cobra.Command{
-	Use:   "consul-bridge",
-	Short: "consul bridge between test and prod",
-	Long:  `consul bridge between test and prod`,
-	Run: func(cmd *cobra.Command, args []string) {
-		var setting Setting
-		yamlFile, err := os.ReadFile(targetSettingFile)
-		if err != nil {
-			fmt.Printf("ERROR: %s\n", err.Error())
-			return
-		}
-		err = yaml.Unmarshal(yamlFile, &setting)
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-		setting.InitDefaults()
-		setting.PrettyPrint()
-		exitChan := make(chan os.Signal)
-		signal.Notify(exitChan, os.Interrupt, os.Kill, syscall.SIGTERM)
-		go exitHandle(setting, exitChan)
-
-		config := api.DefaultConfig()
-		config.Address = setting.ConsulAddress //consul地址
-		client, err := api.NewClient(config)
-		if err != nil {
-			fmt.Printf("ERROR: %s\n", err.Error())
-			return
-		}
-		for _, agent := range setting.Agents {
-			if strings.ToLower(agent.Using) == "http" {
-				go bridgeWithHttp(client, *agent)
-			} else if strings.ToLower(agent.Using) == "tcp" {
-				go bridgeWithTCP(client, *agent)
-			} else {
-				fmt.Println("ERROR: \"using must be one of [http, tcp]\"")
-				return
-			}
-		}
-		select {}
-	},
-}
-
-// 处理系统的推出信号, 注销consul中的服务
-func exitHandle(setting Setting, exitChan chan os.Signal) {
-	for {
-		select {
-		case <-exitChan:
-			config := api.DefaultConfig()
-			config.Address = setting.ConsulAddress //consul地址
-			client, err := api.NewClient(config)   //创建客户端
-			if err != nil {
-				log.Fatal(err)
-			}
-			for _, agent := range setting.Agents {
-				if !agent.Ignore {
-					fmt.Println("deregister service:", agent.ServiceName)
-					err := client.Agent().ServiceDeregister(agent.ServiceName)
-					if err != nil {
-						log.Println(err)
-					}
-				}
-			}
-			os.Exit(0)
-		}
-	}
-}
 
 // 代理udp请求
 
