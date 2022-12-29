@@ -13,12 +13,12 @@ import (
 	"syscall"
 )
 
-var cmdConsulBridge = &goter.Command{Cmd: &cobra.Command{
+var cmdProxy = &goter.Command{Cmd: &cobra.Command{
 	Use:   "proxy",
 	Short: "consul bridge between test and prod",
 	Run: func(cmd *cobra.Command, args []string) {
 		var setting Setting
-		yamlFile, err := os.ReadFile(targetSettingFile)
+		yamlFile, err := os.ReadFile(targetFile.Value)
 		if err != nil {
 			fmt.Printf("ERROR: %s\n", err.Error())
 			return

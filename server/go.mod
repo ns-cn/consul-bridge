@@ -23,7 +23,7 @@ require (
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.1.2 // indirect
-	github.com/ns-cn/goter v0.0.0-20221228012845-e5c5c3656dc8 // indirect
+	github.com/ns-cn/goter v0.0.0-20221229054105-bf55f07cf5ce // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	golang.org/x/sys v0.0.0-20210330210617-4fbd30eecc44 // indirect
 )
