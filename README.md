@@ -1,6 +1,8 @@
 # consul-bridge
 consul-bridge: 架设多个consul环境之间的桥梁
 
+[![Security Status](https://www.murphysec.com/platform3/v3/badge/1608427249041678336.svg)](https://www.murphysec.com/accept?code=17d157013f4f2ba390641ecfd5d8da66&type=1&from=2&t=1)
+
 ## 解决问题
 
 - [x] 开发时需要本地开发调试，但本地服务又存在服务依赖问题
